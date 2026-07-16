@@ -6,7 +6,40 @@ Este repositorio demuestra un pipeline de Ingeniería de Datos de extremo a extr
 El pipeline culmina en activos de datos altamente optimizados y listos para el negocio: un **Esquema Estrella de Kimball** para análisis de BI basados en SQL (evaluando la distancia de separación entre Receptores y Defensores) y una **One Big Table (OBT)** diseñada para Machine Learning distribuido.
 
 ## 🏗️ Arquitectura y Flujo de Datos
+graph LR
+    %% Definición de colores basados en tu diagrama de referencia
+    classDef pinkBox fill:#d20082,stroke:#5c003a,stroke-width:2px,color:white;
+    classDef blueBox fill:#4472c4,stroke:#1d3057,stroke-width:2px,color:white;
+    classDef orangeBox fill:#ed7d31,stroke:#8a4515,stroke-width:2px,color:white;
+    classDef grayBox fill:#a5a5a5,stroke:#595959,stroke-width:2px,color:white;
+    classDef yellowBox fill:#ffc000,stroke:#806000,stroke-width:2px,color:black;
 
+    subgraph Generacion ["Generación de Datos"]
+        A[Simulador Python<br>Google Colab]:::pinkBox
+    end
+
+    subgraph Mensajeria ["Streaming en la Nube"]
+        B[(Confluent Cloud<br>Apache Kafka)]:::blueBox
+    end
+
+    subgraph Databricks ["Procesamiento Databricks - Arquitectura Medallón"]
+        C[Capa Bronze<br>Datos Crudos JSON]:::orangeBox
+        D[Capa Silver<br>Datos Limpios]:::grayBox
+        E[Capa Gold<br>Datos Agregados]:::yellowBox
+    end
+
+    subgraph Modelado ["Modelado de Datos (Gold)"]
+        F[(Esquema Estrella<br>Tablas Dim / Fact)]:::blueBox
+        G[(One Big Table<br>Para Machine Learning)]:::blueBox
+    end
+
+    %% Conexiones
+    A -- Eventos de Telemetría --> B
+    B -- PySpark Streaming --> C
+    C -- Transformación (DLT) --> D
+    D -- Agregación (DLT) --> E
+    E -- Carga de modelo --> F
+    E -- Carga de modelo --> G
 1. **Generación de Datos:** Un simulador basado en Python genera telemetría espacial sintética y de alta frecuencia (coordenadas, velocidad, aceleración) de jugadores de la NFL.
 2. **Streaming en Tiempo Real:** Los datos se publican en un tópico de Confluent Cloud Kafka y se ingieren directamente en Databricks utilizando Spark Structured Streaming nativo.
 3. **Procesamiento de Datos (Arquitectura Medallón):**
