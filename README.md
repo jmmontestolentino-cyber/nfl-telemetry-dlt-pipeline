@@ -6,13 +6,15 @@ Este repositorio demuestra un pipeline de Ingeniería de Datos de extremo a extr
 El pipeline culmina en activos de datos altamente optimizados y listos para el negocio: un **Esquema Estrella de Kimball** para análisis de BI basados en SQL (evaluando la distancia de separación entre Receptores y Defensores) y una **One Big Table (OBT)** diseñada para Machine Learning distribuido.
 
 ## 🏗️ Arquitectura y Flujo de Datos
+```mermaid
 graph LR
-    %% Definición de colores basados en tu diagrama de referencia
+    %% Definición de colores
     classDef pinkBox fill:#d20082,stroke:#5c003a,stroke-width:2px,color:white;
     classDef blueBox fill:#4472c4,stroke:#1d3057,stroke-width:2px,color:white;
     classDef orangeBox fill:#ed7d31,stroke:#8a4515,stroke-width:2px,color:white;
     classDef grayBox fill:#a5a5a5,stroke:#595959,stroke-width:2px,color:white;
     classDef yellowBox fill:#ffc000,stroke:#806000,stroke-width:2px,color:black;
+    classDef greenBox fill:#70ad47,stroke:#375623,stroke-width:2px,color:white;
 
     subgraph Generacion ["Generación de Datos"]
         A[Simulador Python<br>Google Colab]:::pinkBox
@@ -20,6 +22,10 @@ graph LR
 
     subgraph Mensajeria ["Streaming en la Nube"]
         B[(Confluent Cloud<br>Apache Kafka)]:::blueBox
+    end
+
+    subgraph Almacenamiento ["Almacenamiento Nube"]
+        S3[(AWS S3<br>Data Lake)]:::greenBox
     end
 
     subgraph Databricks ["Procesamiento Databricks - Arquitectura Medallón"]
@@ -33,13 +39,20 @@ graph LR
         G[(One Big Table<br>Para Machine Learning)]:::blueBox
     end
 
-    %% Conexiones
+    %% Conexiones de doble vía
     A -- Eventos de Telemetría --> B
-    B -- PySpark Streaming --> C
+    
+    %% Ruta A y Ruta B ocurriendo al mismo tiempo
+    B -- "Ruta A: Streaming Directo" --> C
+    B -- "Ruta B: Respaldo / Sink" --> S3
+    S3 -- "Lectura Batch (Histórico)" --> C
+    
+    %% Flujo interno de Databricks
     C -- Transformación (DLT) --> D
     D -- Agregación (DLT) --> E
     E -- Carga de modelo --> F
     E -- Carga de modelo --> G
+```
 1. **Generación de Datos:** Un simulador basado en Python genera telemetría espacial sintética y de alta frecuencia (coordenadas, velocidad, aceleración) de jugadores de la NFL.
 2. **Streaming en Tiempo Real:** Los datos se publican en un tópico de Confluent Cloud Kafka y se ingieren directamente en Databricks utilizando Spark Structured Streaming nativo.
 3. **Procesamiento de Datos (Arquitectura Medallón):**
